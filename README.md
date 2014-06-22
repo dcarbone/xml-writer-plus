@@ -101,7 +101,7 @@ For a full debrief on these two functions:
 * <a href="http://us3.php.net//manual/en/function.preg-replace.php" target="_blank">preg_replace</a>
 
 Every string value that is written to either an object or an array within this library goes through these two functions if the
-**xxSearchCharacters** array for the corresponding action contains values.  It is then replaced with the corresponding position **xxReplacCharacters** value.
+**xxSearchCharacters** array for the corresponding action contains values.  It is then replaced with the corresponding position **xxReplaceCharacters** value.
 
 ### Encoding
 
