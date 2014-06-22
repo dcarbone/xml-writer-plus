@@ -1,0 +1,30 @@
+{
+    "name" : "dcarbone/xml-writer-plus",
+    "type" : "library",
+    "description" : "Simple XML Writer library for PHP 5.3+",
+
+    "keywords": [
+        "php",
+        "xml",
+        "xmlwriter"
+    ],
+    "homepage": "https://github.com/dcarbone/xml-writer-plus",
+    "license": "GPLv3",
+
+    "authors" : [
+        {
+            "name" : "Daniel Carbone",
+            "email" : "daniel.p.carbone@gmail.com"
+        }
+    ],
+
+    "require" : {
+        "php" : ">=5.3.3",
+        "lib-libxml" : "*"
+    },
+    "autoload" : {
+        "psr-4" : {
+            "DCarbone\\" : "src/"
+        }
+    }
+}
