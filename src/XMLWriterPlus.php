@@ -6,7 +6,7 @@ use \XMLWriter;
  * Class XMLWriterPlus
  * @package DCarbone\Helpers
  */
-class XMLWriterPlus
+class XMLWriterPlus extends \XMLWriter
 {
     /**
      * str_replace search value(s)
@@ -40,56 +40,11 @@ class XMLWriterPlus
      */
     public $regexpReplaceCharacters = array();
 
-    /**
-     * Instance of a DOMDocument
-     * @var XMLWriter
-     */
-    protected $writer = null;
+    /** @var string */
+    protected $encoding = 'UTF-8';
 
-    /**
-     * XML Version to use
-     * @var String
-     */
-    protected $version = null;
-
-    /**
-     * XML charset to use
-     * @var String
-     */
-    protected $charset = null;
-
-    /**
-     * Has the document been initialized yet?
-     * @var boolean
-     */
-    protected $started = false;
-
-    /**
-     * Has the document been ended?
-     * @var boolean
-     */
-    protected $ended = false;
-
-    /**
-     * The output XML
-     * @var String
-     */
-    protected $xml = null;
-
-    /**
-     * Namespaces added to this object
-     * @var array
-     */
-    protected $namespaces = array();
-
-    /**
-     * Constructor
-     */
-    public function __construct($version = "1.0", $charset = "UTF-8", $xsd = null)
-    {
-        $this->version = $version;
-        $this->charset = $charset;
-    }
+    /** @var array */
+    protected $nsArray = array();
 
     /**
      * Destructor
@@ -98,128 +53,196 @@ class XMLWriterPlus
      */
     public function __destruct()
     {
-        if ($this->started === true && $this->writer instanceof \XMLWriter)
-            $this->writer->flush();
+        $this->flush();
     }
 
     /**
-     * Quick helper function to determine if this document
-     * is indeed editable
-     *
-     * @access public
-     * @return  Boolean
+     * @param string $prefix
+     * @param string $uri
      */
-    public function canEdit()
+    public function addNS($prefix, $uri)
     {
-        return ($this->started === true && $this->ended === false);
+        $this->nsArray[$prefix] = $uri;
     }
 
     /**
-     * Set charset
-     *
-     * No validation is done on the charset, it's your responsibility
-     * to choose the right one
-     *
-     * @param   String  $charset  desired charset
-     * @return  Boolean
+     * @param string$prefix
      */
-    public function setCharset($charset = null)
+    public function removeNS($prefix)
     {
-        if ($this->started || !is_string($charset) || trim($charset) === '')
-            return false;
-
-        $this->charset = $charset;
-        return true;
+        if (array_key_exists($prefix, $this->nsArray))
+            unset($this->nsArray[$prefix]);
     }
 
     /**
-     * Set version
-     *
-     * No validation is done on the version, it is your responsibility
-     * to choose the right one.
-     *
-     * @param   String  $version  Version to use
-     * @return  Boolean
+     * @param string $prefix
+     * @return bool
      */
-    public function setVersion($version = null)
+    public function hasNSPrefix($prefix)
     {
-        if ($this->started || !is_string($version) || trim($version) === "")
-            return false;
-
-        $this->version = $version;
-        return true;
+        return array_key_exists($prefix, $this->nsArray);
     }
 
     /**
-     * Add a Namespace to this XML object
-     *
-     * @param  String  $prefix  Prefix of namespace
-     * @param  String  $uri     DTD or XSD file location
+     * @param string $uri
+     * @return bool
      */
-    public function registerNamespace($prefix, $uri)
+    public function hasNSUri($uri)
     {
-        $this->namespaces[$prefix] = $uri;
+        return in_array($uri, $this->nsArray, true);
     }
 
     /**
-     * Write opening element in xml
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-start-element.php
-     * @link  http://www.php.net/manual/en/function.xmlwriter-start-element-ns.php
-     *
-     * @param  String $name    Name of Element
-     * @param  Mixed $prefix  Namespace Prefix
-     * @throws \OutOfBoundsException
-     * @return Bool
+     * @return array
      */
-    public function writeStartElement($name, $prefix = null)
+    public function getNSArray()
     {
-        if ($this->canEdit() && is_string($name))
-        {
-            // If this is a NS'd element
-            if (is_string($prefix))
-            {
-                if (!isset($this->namespaces[$prefix]))
-                    throw new \OutOfBoundsException("Specified Invalid XMLWriterPlus Namespace Prefix");
+        return $this->nsArray;
+    }
 
-                return $this->writer->startElementNS($prefix, $name, $this->namespaces[$prefix]);
-            }
+    /**
+     * @param array $nsArray
+     */
+    public function setNSArray(array $nsArray)
+    {
+        $this->nsArray = $nsArray;
+    }
 
-            // If a non-ns element
-            return $this->writer->startElement($name);
-        }
+    /**
+     * @param string $prefix
+     * @return string|bool
+     */
+    public function getNSUriFromPrefix($prefix)
+    {
+        if ($this->hasNSPrefix($prefix))
+            return $this->nsArray[$prefix];
 
         return false;
     }
+
+    /**
+     * @param string $uri
+     * @return mixed
+     */
+    public function getNSPrefixFromUri($uri)
+    {
+        return array_search($uri, $this->nsArray, true);
+    }
+
+    /**
+     * @param float $version
+     * @param string $encoding
+     * @param bool $standalone
+     * @return bool|void
+     */
+    public function startDocument($version = 1.0, $encoding = 'UTF-8', $standalone = null)
+    {
+        if (is_float($version) || is_int($version))
+            $version = number_format((float)$version, 1);
+
+        $this->encoding = $encoding;
+        parent::startDocument($version, $encoding, $standalone);
+    }
+
+    /**
+     * @param string $prefix
+     * @param string $name
+     * @param string $uri
+     * @return bool
+     */
+    public function startAttributeNS($prefix, $name, $uri = null)
+    {
+        $this->nsArray[$prefix] = $uri;
+        return parent::startAttributeNS($prefix, $name, $uri);
+    }
+
+    /**
+     * @param string $prefix
+     * @param string $name
+     * @param string $uri
+     * @param string $content
+     * @return bool
+     */
+    public function writeAttributeNS($prefix, $name, $uri = null, $content)
+    {
+        if (!$this->hasNSPrefix($prefix))
+            $this->nsArray[$prefix] = $uri;
+
+        return parent::writeAttributeNS($prefix, $name, $uri, $content);
+    }
+
+    /**
+     * @param string $prefix
+     * @param string $name
+     * @param string $uri
+     * @return bool
+     */
+    public function startElementNS($prefix, $name, $uri = null)
+    {
+        if (!$this->hasNSPrefix($prefix))
+            $this->nsArray[$prefix] = $uri;
+
+        return parent::startElementNS($prefix, $name, $uri);
+    }
+
+    /**
+     * @param string $prefix
+     * @param string $name
+     * @param string $uri
+     * @param null|string $content
+     * @return bool
+     */
+    public function writeElementNS($prefix, $name, $uri = null, $content = null)
+    {
+        if (!$this->hasNSPrefix($prefix))
+            $this->nsArray[$prefix] = $uri;
+
+        return parent::writeElementNS($prefix, $name, $uri, $content);
+    }
+
 
     /**
      * Write Text into Attribute or Element
      *
      * @link  http://www.php.net/manual/en/function.xmlwriter-text.php
      *
-     * @param String $text Value to write
+     * @param string $text Value to write
      * @throws \InvalidArgumentException
-     * @return  Bool
+     * @return  bool
      */
-    public function writeText($text)
+    public function text($text)
     {
-        if ($this->canEdit())
+        if (is_string($text) || settype($text, 'string' ) !== false)
         {
-            if (is_string($text) || settype($text, 'string' ) !== false)
-            {
-                $convert = $this->convertCharacters($text);
-                $encode = $this->encodeString($convert);
-                return $this->writer->text($encode);
-            }
-            else
-            {
-                throw new \InvalidArgumentException("Cannot cast WriteText value to string (did you forget to define a __toString on your object?)");
-            }
+            $converted = $this->convertCharacters($text);
+            $encoded = $this->encodeString($converted);
+            return parent::text($encoded);
         }
-        else
-        {
-            return false;
-        }
+
+        throw new \InvalidArgumentException('XMLWriterPlus::text - Cannot cast passed value to string (did you forget to define a __toString on your object?)');
+    }
+
+    /**
+     * @param string $name
+     * @param string|null $content
+     * @param string|null $nsPrefix
+     * @return bool
+     */
+    public function writeElement($name, $content = null, $nsPrefix = null)
+    {
+        if ($nsPrefix === null)
+            return $this->startElement($name) &&
+                $this->text($content) &&
+                $this->endElement(($content === null ? true : false));
+
+        if ($this->hasNSPrefix($nsPrefix))
+            return $this->writeElementNS(
+                $nsPrefix,
+                $name,
+                $this->getNSUriFromPrefix($nsPrefix),
+                $content);
+
+        return $this->writeElementNS($nsPrefix, $name, null, $content);
     }
 
     /**
@@ -227,278 +250,137 @@ class XMLWriterPlus
      *
      * @link  http://www.php.net/manual/en/function.xmlwriter-full-end-element.php
      *
-     * @return Boolean
+     * @param bool $full
+     * @return bool
      */
-    public function writeEndElement()
+    public function endElement($full = false)
     {
-        if ($this->canEdit())
-            return $this->writer->fullEndElement();
+        if ($full === true)
+            return $this->fullEndElement();
 
-        return false;
+        return parent::endElement();
     }
 
     /**
-     * Write Entire Element to Xml
-     *
-     * {@link WriteStartElement()}
-     * {@link WriteText()}
-     * {@link WriteEndElement()}
-     *
-     * @param String  $name        Name of element
-     * @param String  $data        Data of element
-     * @param Mixed   $prefix      Namespace Prefix
-     * @return Boolean
+     * @param string $name
+     * @param string $content
+     * @param string|null $nsPrefix
+     * @return bool
      */
-    public function writeElement($name, $data, $prefix = null)
+    public function writeCDataElement($name, $content, $nsPrefix = null)
     {
-        if ($this->canEdit())
-            return $this->writeStartElement($name, $prefix) &&
-                $this->writeText($data) &&
-                $this->writeEndElement();
+        if ($nsPrefix === null)
+        return $this->startElement($name) &&
+            $this->writeCdata($content) &&
+            $this->endElement(true);
 
-        return false;
+        if ($this->hasNSPrefix($nsPrefix))
+            return $this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix)) &&
+                $this->writeCdata($content) &&
+                $this->endElement(true);
+
+        return $this->writeElementNS($nsPrefix, $name, null) &&
+            $this->writeCdata($content) &&
+            $this->endElement(true);
     }
 
     /**
-     * Start an attribute on an element
+     * Append an integer index array of values to this XML document
      *
-     * @link http://www.php.net/manual/en/function.xmlwriter-start-attribute.php
-     *
-     * @param  String  $name  Name of Attribute
-     * @return Boolean
+     * @param array $data
+     * @param string $elementName
+     * @param null|string $nsPrefix
+     * @return bool
      */
-    public function writeStartAttribute($name)
+    public function appendList(array $data, $elementName, $nsPrefix = null)
     {
-        if ($this->canEdit())
-            return $this->writer->startAttribute($name);
-
-        return false;
-    }
-
-    /**
-     * End an attribute on an element
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-end-attribute.php
-     *
-     * @return Boolean
-     */
-    public function writeEndAttribute()
-    {
-        if ($this->canEdit())
-            return $this->writer->endAttribute();
-
-        return false;
-    }
-
-    /**
-     * Write a whole attribute on an element
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-write-attribute.php
-     *
-     * @param String  $name   Name of Attribute
-     * @param String  $value  Value of Attribute
-     * @return  Boolean
-     */
-    public function writeAttribute($name, $value)
-    {
-        if ($this->canEdit())
-            return $this->writeStartAttribute($name) &&
-                $this->writeText($value) &&
-                $this->writeEndAttribute();
-
-        return false;
-    }
-
-    /**
-     * Write Comment Start
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-start-comment.php
-     *
-     * @return Boolean
-     */
-    public function writeStartComment()
-    {
-        if ($this->canEdit())
-            return $this->writer->startComment();
-
-        return false;
-    }
-
-    /**
-     * Write Comment End
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-end-comment.php
-     *
-     * @return Boolean
-     */
-    public function writeEndComment()
-    {
-        if ($this->canEdit())
-            return $this->writer->endComment();
-
-        return false;
-    }
-
-    /**
-     * Write Full Comment Block
-     *
-     * @param  String  $text  Body of comment
-     * @return Boolean
-     */
-    public function writeComment($text)
-    {
-        if ($this->canEdit() && is_string($text))
-            return $this->writeStartComment() &&
-                $this->writeCommentText($text) &&
-                $this->writeEndComment();
-
-        return false;
-    }
-
-    /**
-     * Comments need to be pretty.
-     *
-     * @param String $text Body of comment
-     * @throws \InvalidArgumentException
-     * @return  Bool
-     */
-    public function writeCommentText($text)
-    {
-        if ($this->canEdit())
+        foreach($data as $value)
         {
-            if (is_string($text) || settype($text, 'string' ) !== false)
+            $this->writeElement($elementName, $value, $nsPrefix);
+        }
+
+        return true;
+    }
+
+    /**
+     * Append an associative array or object to this XML document
+     *
+     * @param array|object $data
+     * @return bool
+     */
+    public function appendHash($data)
+    {
+        if (is_array($data) || (is_object($data) && $data instanceof \Iterator))
+        {
+            foreach($data as $key=>$value)
             {
-                $convert = $this->convertCharacters($text);
-                $encoded = $this->encodeString($convert);
-                $string = " ".$encoded." ";
-                return $this->writer->text($string);
+                $this->appendHashData($key, $value);
             }
-            else
+            return true;
+        }
+
+        if (is_object($data))
+        {
+            foreach(get_object_vars($data) as $key=>$value)
             {
-                throw new \InvalidArgumentException("Cannot cast WriteText value to string (did you forget to define a __toString on your object?)");
+                $this->appendHashData($key, $value);
             }
+
+            return true;
         }
 
         return false;
     }
 
     /**
-     * Start CData Element
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-start-cdata.php
-     *
-     * @param $name
-     * @param null $prefix
-     * @return Boolean
+     * @param mixed $key
+     * @param mixed $value
      */
-    public function writeStartCDataElement($name, $prefix = null)
+    protected function appendHashData($key, $value)
     {
-        if ($this->canEdit() && is_string($name))
-            return $this->writeStartElement($name, $prefix) && $this->writeStartCData();
-
-        return false;
-    }
-
-    /**
-     * End CData element
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-end-cdata.php
-     *
-     * @return Boolean
-     */
-    public function writeEndCDataElement()
-    {
-        if ($this->canEdit())
-            return $this->writeEndCData() && $this->writeEndElement();
-
-        return false;
-    }
-
-    /**
-     * Start CData
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-start-cdata.php
-     *
-     * @return Boolean
-     */
-    public function writeStartCData()
-    {
-        if ($this->canEdit())
-            return $this->writer->startCData();
-
-        return false;
-    }
-
-    /**
-     * End CData
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-end-cdata.php
-     *
-     * @return Boolean
-     */
-    public function writeEndCData()
-    {
-        if ($this->canEdit())
-            return $this->writer->endCData();
-
-        return false;
-    }
-
-    /**
-     * Starts XmlWriter instance and defines
-     * charset / version
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-open-memory.php
-     * @link  http://www.php.net/manual/en/function.xmlwriter-start-document.php
-     *
-     * @return  Boolean
-     */
-    public function startDocument()
-    {
-        if ($this->started === true || $this->ended === true)
-            return false;
-
-        $this->writer = new \XmlWriter($this->version, $this->charset);
-        $this->started = true;
-        $this->writer->openMemory();
-        return $this->writer->startDocument($this->version, $this->charset);
-    }
-
-    /**
-     * End xml doc
-     *
-     * @link  http://www.php.net/manual/en/function.xmlwriter-end-document.php
-     * @link  http://www.php.net/manual/en/function.xmlwriter-output-memory.php
-     *
-     * @return  Boolean
-     */
-    public function endDocument()
-    {
-        if ($this->started === false || $this->ended === true)
-            return false;
-
-        $this->ended = true;
-        $this->writer->endDocument();
-        $this->xml = $this->writer->outputMemory(true);
-        return true;
-    }
-
-    /**
-     * Return's the output of the memory buffer
-     *
-     * @return String
-     */
-    public function getXML()
-    {
-        return $this->xml;
+        if (is_scalar($value))
+        {
+            if (is_string($key))
+            {
+                if (strstr($key, ':') !== false)
+                {
+                    $exp = explode(':', $key);
+                    $this->writeElement($exp[1], $value, $exp[0]);
+                }
+                else
+                {
+                    $this->writeElement($key, $value);
+                }
+            }
+            else
+            {
+                $this->writeElement($key, $value);
+            }
+        }
+        else
+        {
+            if (strstr($key, ':') !== false)
+            {
+                $exp = explode(':', $key);
+                $this->startElementNS($exp[0], $exp[1]);
+                $this->appendHash($value);
+                $this->endElement(true);
+            }
+            else
+            {
+                $this->startElement($key);
+                $this->appendHash($value);
+                $this->endElement(true);
+            }
+        }
     }
 
     /**
      * Convert characters for output in an XML file
      *
-     * @param   String $string  Input String
+     * @param   string $string  Input string
      * @throws \InvalidArgumentException
-     * @return  String
+     * @return  string
      */
     protected function convertCharacters($string)
     {
@@ -539,15 +421,11 @@ class XMLWriterPlus
 
         // Execute str_replace
         if ($strSearch !== null && $strReplace !== null)
-        {
             $string = str_replace($strSearch, $strReplace, $string);
-        }
 
         // Execute preg_replace
         if ($regexpSearch !== null && $regexpReplace !== null)
-        {
             $string = preg_replace($regexpSearch, $regexpReplace, $string);
-        }
 
         return $string;
     }
@@ -558,27 +436,26 @@ class XMLWriterPlus
      * @link  http://php.net/manual/en/function.mb-detect-encoding.php
      * @link  http://www.php.net/manual/en/function.mb-convert-encoding.php
      *
-     * @param   String  $string  un-encoded string
-     * @return  String
+     * @param   string  $string  un-encoded string
+     * @return  string
      */
     protected function encodeString($string)
     {
+        // If no encoding value was passed in...
+        if ($this->encoding === null)
+            return $string;
+
         $detect = mb_detect_encoding($string);
 
         // If the current encoding is already the requested encoding
-        if (is_string($detect) && $detect === $this->charset)
-        {
+        if (is_string($detect) && $detect === $this->encoding)
             return $string;
-        }
+
         // Failed to determine encoding
-        else if (is_bool($detect))
-        {
+        if (is_bool($detect))
             return $string;
-        }
+
         // Convert it!
-        else
-        {
-            return mb_convert_encoding($string, $this->charset, $detect);
-        }
+        return mb_convert_encoding($string, $this->encoding, $detect);
     }
 }
