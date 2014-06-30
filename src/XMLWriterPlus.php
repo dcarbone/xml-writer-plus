@@ -222,6 +222,18 @@ class XMLWriterPlus extends \XMLWriter
         return parent::writeElementNS($prefix, $name, $uri, $content);
     }
 
+    /**
+     * @param string $name
+     * @param string|null $nsPrefix
+     * @return bool
+     */
+    public function startElement($name, $nsPrefix = null)
+    {
+        if ($nsPrefix === null)
+            return parent::startElement($name);
+
+        return $this->startElementNS($nsPrefix, $name);
+    }
 
     /**
      * Write Text into Attribute or Element
@@ -254,8 +266,8 @@ class XMLWriterPlus extends \XMLWriter
     {
         if ($nsPrefix === null)
             return $this->startElement($name) &&
-                $this->text($content) &&
-                $this->endElement(($content === null ? true : false));
+            $this->text($content) &&
+            $this->endElement(($content === null ? true : false));
 
         if ($this->hasNSPrefix($nsPrefix))
             return $this->writeElementNS(
@@ -292,18 +304,18 @@ class XMLWriterPlus extends \XMLWriter
     public function writeCDataElement($name, $content, $nsPrefix = null)
     {
         if ($nsPrefix === null)
-        return $this->startElement($name) &&
+            return $this->startElement($name) &&
             $this->writeCdata($content) &&
             $this->endElement(true);
 
         if ($this->hasNSPrefix($nsPrefix))
             return $this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix)) &&
-                $this->writeCdata($content) &&
-                $this->endElement(true);
-
-        return $this->writeElementNS($nsPrefix, $name, null) &&
             $this->writeCdata($content) &&
             $this->endElement(true);
+
+        return $this->writeElementNS($nsPrefix, $name, null) &&
+        $this->writeCdata($content) &&
+        $this->endElement(true);
     }
 
     /**
@@ -328,15 +340,16 @@ class XMLWriterPlus extends \XMLWriter
      * Append an associative array or object to this XML document
      *
      * @param array|object $data
+     * @param string|null $previousKey
      * @return bool
      */
-    public function appendHash($data)
+    public function appendHash($data, $previousKey = null)
     {
         if (is_array($data) || (is_object($data) && $data instanceof \Iterator))
         {
             foreach($data as $key=>$value)
             {
-                $this->appendHashData($key, $value);
+                $this->appendHashData($key, $value, $previousKey);
             }
             return true;
         }
@@ -345,7 +358,7 @@ class XMLWriterPlus extends \XMLWriter
         {
             foreach(get_object_vars($data) as $key=>$value)
             {
-                $this->appendHashData($key, $value);
+                $this->appendHashData($key, $value, $previousKey);
             }
 
             return true;
@@ -357,12 +370,13 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param mixed $key
      * @param mixed $value
+     * @param null|string $previousKey
      */
-    protected function appendHashData($key, $value)
+    protected function appendHashData($key, $value, $previousKey)
     {
         if (is_scalar($value))
         {
-            if (is_string($key))
+            if (is_string($key) && !is_numeric($key))
             {
                 if (strstr($key, ':') !== false)
                 {
@@ -374,26 +388,37 @@ class XMLWriterPlus extends \XMLWriter
                     $this->writeElement($key, $value);
                 }
             }
+            else if (is_numeric($key) && $previousKey !== null && !is_numeric($previousKey))
+            {
+                $this->writeElement($previousKey, $value);
+            }
             else
             {
                 $this->writeElement($key, $value);
             }
+
+            return;
+        }
+
+        if (is_numeric($key))
+        {
+            foreach($value as $k=>$v)
+            {
+                $this->appendHashData($k, $v, $previousKey);
+            }
+        }
+        else if (strstr($key, ':') !== false)
+        {
+            $exp = explode(':', $key);
+            $this->startElementNS($exp[0], $exp[1]);
+            $this->appendHash($value, $key);
+            $this->endElement(true);
         }
         else
         {
-            if (strstr($key, ':') !== false)
-            {
-                $exp = explode(':', $key);
-                $this->startElementNS($exp[0], $exp[1]);
-                $this->appendHash($value);
-                $this->endElement(true);
-            }
-            else
-            {
-                $this->startElement($key);
-                $this->appendHash($value);
-                $this->endElement(true);
-            }
+            $this->startElement($key);
+            $this->appendHash($value, $key);
+            $this->endElement(true);
         }
     }
 

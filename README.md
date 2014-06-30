@@ -327,7 +327,8 @@ Expanded:
 
 * As seen above, you may pass in a hash key with a colon ('h:HashKey2', for instance) and XMLWriterPlus will automatically create a namespaced element.
 * You may pass in an object instance of a custom class as long as the class implements some form of PHP's <a href="http://www.php.net/manual/en/class.iterator.php" target="_blank">Iterator interface</a>
-* If you pass in a hash with integer indexes you will end up with elements such as ```xml <1>value</1> ``` .
+* If you wish to have multiple elements with the same name at the same level, you must pass in an array as such:
+    * ``` array('Parent' => array( array('Child' => 'Value' ), array('Child' => 'Value') );```
 
 ## Character Conversion
 
