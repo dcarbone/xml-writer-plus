@@ -76,6 +76,146 @@ Or, more legibly,
 </Root>
 ```
 
+## Namespaces
+
+One of the features of the core <a href="http://www.php.net//manual/en/book.xmlwriter.php" target="_blank">XMLWriter</a> class is the ability to
+add namespace prefixes and URI's to individual elements.  It is also one of the more annoying features, as you have to manually define the NS and URI for
+each element.
+
+To address this, I have added the following methods:
+
+```php
+/**
+ * @param string $prefix
+ * @param string $uri
+ */
+public function addNS($prefix, $uri);
+
+/**
+ * @param string $prefix
+ */
+public function removeNS($prefix);
+
+/**
+ * @param string $prefix
+ * @return bool
+ */
+public function hasNSPrefix($prefix);
+
+/**
+ * @param string $uri
+ * @return bool
+ */
+public function hasNSUri($uri);
+
+/**
+ * @return array
+ */
+public function getNSArray();
+
+/**
+ * @param array $nsArray
+ */
+public function setNSArray(array $nsArray);
+
+/**
+ * @param string $prefix
+ * @return string|bool
+ */
+public function getNSUriFromPrefix($prefix);
+
+/**
+ * @param string $uri
+ * @return mixed
+ */
+public function getNSPrefixFromUri($uri);
+```
+
+These methods interact with an internal associative array of ``` $prefix => $uri ```.  The methods:
+
+```php
+/**
+ * @param string $prefix
+ * @param string $name
+ * @param string $uri
+ * @return bool
+ */
+public function startAttributeNS($prefix, $name, $uri = null)
+
+/**
+ * @param string $prefix
+ * @param string $name
+ * @param string $uri
+ * @param string $content
+ * @return bool
+ */
+public function writeAttributeNS($prefix, $name, $uri = null, $content)
+
+/**
+ * @param string $prefix
+ * @param string $name
+ * @param string $uri
+ * @return bool
+ */
+public function startElementNS($prefix, $name, $uri = null)
+
+/**
+ * @param string $prefix
+ * @param string $name
+ * @param string $uri
+ * @param null|string $content
+ * @return bool
+ */
+public function writeElementNS($prefix, $name, $uri = null, $content = null)
+```
+
+Have all been modified to update this internal array.  So if you do:
+
+```php
+$xmlWriterPlus->startElementNS('pre', 'ElementName', 'http://my-special-prefix-uri.awesome');
+$xmlWriterPlus->text('Test');
+$xmlWriterPlus->endElement();
+echo '<pre>';
+var_export($xmlWriterPlus->getNSArray());
+echo '</pre>';
+```
+
+You will see:
+
+```php
+array (
+  'pre' => 'http://my-special-prefix-uri.awesome',
+)
+```
+
+This can then be used with the overloaded :
+
+```php
+/**
+ * @param string $name
+ * @param string|null $content
+ * @param string|null $nsPrefix
+ * @return bool
+ */
+public function writeElement($name, $content = null, $nsPrefix = null)
+```
+
+As such:
+
+```php
+$xmlWriterPlus->writeElement('ElementName', 'my awesome content', 'pre');
+```
+
+Which will result in:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<pre:ElementName xmlns:pre="http://my-special-prefix-uri.awesome">Test</pre:ElementName>
+<pre:ElementName xmlns:pre="http://my-special-prefix-uri.awesome">my awesome content</pre:ElementName>
+```
+
+If you execute a ``` writeElement ``` call with a previously undefined namespace URI, NULL will be used (no xmlns attribute will be output).
+
 ## Fun stuff
 
 Lets say you have a XMLWriterPlus instance already open and an array already constructed, and you wish to just append the entire thing

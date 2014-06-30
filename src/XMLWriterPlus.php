@@ -46,6 +46,9 @@ class XMLWriterPlus extends \XMLWriter
     /** @var array */
     protected $nsArray = array();
 
+    /** @var bool */
+    protected $memory = false;
+
     /**
      * Destructor
      *
@@ -66,7 +69,7 @@ class XMLWriterPlus extends \XMLWriter
     }
 
     /**
-     * @param string$prefix
+     * @param string $prefix
      */
     public function removeNS($prefix)
     {
@@ -127,6 +130,25 @@ class XMLWriterPlus extends \XMLWriter
     public function getNSPrefixFromUri($uri)
     {
         return array_search($uri, $this->nsArray, true);
+    }
+
+    /**
+     * @return bool
+     */
+    public function openMemory()
+    {
+        $this->memory = true;
+        return parent::openMemory();
+    }
+
+    /**
+     * @param string $uri
+     * @return bool
+     */
+    public function openUri($uri)
+    {
+        $this->memory = false;
+        return parent::openUri($uri);
     }
 
     /**
@@ -457,5 +479,67 @@ class XMLWriterPlus extends \XMLWriter
 
         // Convert it!
         return mb_convert_encoding($string, $this->encoding, $detect);
+    }
+
+    /**
+     * @param bool $flush
+     * @param bool $endDoc
+     * @throws \Exception
+     * @return null|\SimpleXMLElement
+     */
+    public function getSXEFromMemory($flush = false, $endDoc = false)
+    {
+        if ($this->memory === true)
+        {
+            if ($endDoc === true)
+                $this->endDocument();
+
+            try {
+                if (defined('LIBXML_PARSEHUGE'))
+                    $arg = LIBXML_COMPACT | LIBXML_PARSEHUGE;
+                else
+                    $arg = LIBXML_COMPACT;
+
+                return new \SimpleXMLElement($this->outputMemory((bool)$flush), $arg);
+            }
+            catch (\Exception $e) {
+                if (libxml_get_last_error() !== false)
+                    throw new \Exception('DCarbone\XMLWriterPlus::getSXEFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
+                else
+                    throw new \Exception('DCarbone\XMLWriterPlus::getSXEFromMemory - Error encountered: "'.$e->getMessage().'"');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param bool $flush
+     * @param bool $endDoc
+     * @return \DOMDocument|null
+     * @throws \Exception
+     */
+    public function getDOMFromMemory($flush = false, $endDoc = false)
+    {
+        if ($this->memory === true)
+        {
+            if ($endDoc === true)
+                $this->endDocument();
+
+            try {
+                $dom = new \DOMDocument();
+                $dom->loadXML($this->outputMemory((bool)$flush));
+
+                return $dom;
+            }
+            catch (\Exception $e) {
+                if (libxml_get_last_error() !== false)
+                    throw new \Exception('DCarbone\XMLWriterPlus::getDOMFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
+                else
+                    throw new \Exception('DCarbone\XMLWriterPlus::getDOMFromMemory - Error encountered: "'.$e->getMessage().'"');
+            }
+        }
+
+        return null;
     }
 }
