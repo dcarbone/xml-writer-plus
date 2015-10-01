@@ -329,33 +329,3 @@ Expanded:
 * You may pass in an object instance of a custom class as long as the class implements some form of PHP's <a href="http://www.php.net/manual/en/class.iterator.php" target="_blank">Iterator interface</a>
 * If you wish to have multiple elements with the same name at the same level, you must pass in an array as such:
     * ``` array('Parent' => array( array('Child' => 'Value' ), array('Child' => 'Value') );```
-
-## Character Conversion
-
-One of the potentially most frustrating things when working with data from multiple different systems can be character encoding conversion.
-
-I have tried to make this as simple as possible for you to get around, keeping in mind a few things:
-
-* Json data MUST be encoded in UTF-8
-* The ability of your system to convert encodings will depend on your specific PHP instance
-
-There are 4 public arrays that are used to help facilitate this:
-
-* **$strSearchCharacters**
-* **$strReplaceCharacters**
-* **$regexpSearchCharacters**
-* **$regexpReplaceCharacters**
-
-### str_ireplace && preg_replace
-
-For a full debrief on these two functions:
-* <a href="http://www.php.net//manual/en/function.str-ireplace.php" target="_blank">str_ireplace</a>
-* <a href="http://us3.php.net//manual/en/function.preg-replace.php" target="_blank">preg_replace</a>
-
-Every string value that is written to the XML document within this library goes through these two functions if the
-**xxSearchCharacters** array for the corresponding action contains values.  It is then replaced with the corresponding position **xxReplaceCharacters** value.
-
-### Encoding
-
-After character replacement has occurred, the method `encodeString` is called, and utilizes
-PHP's <a href="http://www.php.net//manual/en/function.mb-detect-encoding.php" target="_blank">mb_detect_encoding</a> and <a href="http://www.php.net//manual/en/function.mb-convert-encoding.php" target="_blank">mb_convert_encoding</a> functions.

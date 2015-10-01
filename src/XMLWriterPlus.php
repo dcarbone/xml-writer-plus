@@ -8,40 +8,8 @@ use \XMLWriter;
  */
 class XMLWriterPlus extends \XMLWriter
 {
-    /**
-     * str_replace search value(s)
-     * @var array
-     */
-    public $strSearchCharacters = array(
-        '&#169;',
-        '&#xa9;',
-        '&copy;'
-    );
-
-    /**
-     * str_replace replace value(s)
-     * @var array
-     */
-    public $strReplaceCharacters = array(
-        '\u00A9', // copyright symbol
-        '\u00A9',
-        '\u00A9'
-    );
-
-    /**
-     * RegExp search value(s)
-     * @var array
-     */
-    public $regexpSearchCharacters = array();
-
-    /**
-     * RegExp replace value(s)
-     * @var array
-     */
-    public $regexpReplaceCharacters = array();
-
     /** @var string */
-    protected $encoding = 'UTF-8';
+    protected $encoding;
 
     /** @var array */
     protected $nsArray = array();
@@ -73,7 +41,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function removeNS($prefix)
     {
-        if (array_key_exists($prefix, $this->nsArray))
+        if (isset($this->nsArray[$prefix]) || array_key_exists($prefix, $this->nsArray))
             unset($this->nsArray[$prefix]);
     }
 
@@ -83,7 +51,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function hasNSPrefix($prefix)
     {
-        return array_key_exists($prefix, $this->nsArray);
+        return isset($this->nsArray[$prefix]) || array_key_exists($prefix, $this->nsArray);
     }
 
     /**
@@ -248,12 +216,11 @@ class XMLWriterPlus extends \XMLWriter
     {
         if (is_string($text) || settype($text, 'string' ) !== false)
         {
-            $converted = $this->convertCharacters($text);
-            $encoded = $this->encodeString($converted);
+            $encoded = $this->encodeString($text);
             return parent::text($encoded);
         }
 
-        throw new \InvalidArgumentException('XMLWriterPlus::text - Cannot cast passed value to string (did you forget to define a __toString on your object?)');
+        throw new \InvalidArgumentException(get_class($this).':text - Cannot cast passed value to string (did you forget to define a __toString on your object?)');
     }
 
     /**
@@ -265,16 +232,20 @@ class XMLWriterPlus extends \XMLWriter
     public function writeElement($name, $content = null, $nsPrefix = null)
     {
         if ($nsPrefix === null)
-            return $this->startElement($name) &&
-            $this->text($content) &&
-            $this->endElement(($content === null ? true : false));
+        {
+            return ($this->startElement($name) &&
+                $this->text($content) &&
+                $this->endElement(($content === null ? true : false)));
+        }
 
         if ($this->hasNSPrefix($nsPrefix))
+        {
             return $this->writeElementNS(
                 $nsPrefix,
                 $name,
                 $this->getNSUriFromPrefix($nsPrefix),
                 $content);
+        }
 
         return $this->writeElementNS($nsPrefix, $name, null, $content);
     }
@@ -304,18 +275,22 @@ class XMLWriterPlus extends \XMLWriter
     public function writeCDataElement($name, $content, $nsPrefix = null)
     {
         if ($nsPrefix === null)
-            return $this->startElement($name) &&
-            $this->writeCdata($content) &&
-            $this->endElement(true);
+        {
+            return ($this->startElement($name) &&
+                $this->writeCdata($content) &&
+                $this->endElement(true));
+        }
 
         if ($this->hasNSPrefix($nsPrefix))
-            return $this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix)) &&
-            $this->writeCdata($content) &&
-            $this->endElement(true);
+        {
+            return ($this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix)) &&
+                $this->writeCdata($content) &&
+                $this->endElement(true));
+        }
 
-        return $this->writeElementNS($nsPrefix, $name, null) &&
-        $this->writeCdata($content) &&
-        $this->endElement(true);
+        return ($this->writeElementNS($nsPrefix, $name, null) &&
+            $this->writeCdata($content) &&
+            $this->endElement(true));
     }
 
     /**
@@ -340,57 +315,43 @@ class XMLWriterPlus extends \XMLWriter
      * Append an associative array or object to this XML document
      *
      * @param array|object $data
-     * @param string|null $previousKey
+     * @param string|null $_previousKey
      * @return bool
      */
-    public function appendHash($data, $previousKey = null)
+    public function appendHash($data, $_previousKey = null)
     {
-        if (is_array($data) || (is_object($data) && $data instanceof \Iterator))
+        foreach($data as $key=>$value)
         {
-            foreach($data as $key=>$value)
-            {
-                $this->appendHashData($key, $value, $previousKey);
-            }
-            return true;
-        }
-
-        if (is_object($data))
-        {
-            foreach(get_object_vars($data) as $key=>$value)
-            {
-                $this->appendHashData($key, $value, $previousKey);
-            }
-
-            return true;
+            $this->appendHashData($key, $value, $_previousKey);
         }
 
         return false;
     }
 
     /**
-     * @param mixed $key
+     * @param string|int $key
      * @param mixed $value
-     * @param null|string $previousKey
+     * @param null|string $_previousKey
      */
-    protected function appendHashData($key, $value, $previousKey)
+    protected function appendHashData($key, $value, $_previousKey)
     {
         if (is_scalar($value))
         {
-            if (is_string($key) && !is_numeric($key))
+            if (is_string($key) && false === ctype_digit($key))
             {
-                if (strstr($key, ':') !== false)
+                if (false === strpos($key, ':'))
+                {
+                    $this->writeElement($key, $value);
+                }
+                else
                 {
                     $exp = explode(':', $key);
                     $this->writeElement($exp[1], $value, $exp[0]);
                 }
-                else
-                {
-                    $this->writeElement($key, $value);
-                }
             }
-            else if (is_numeric($key) && $previousKey !== null && !is_numeric($previousKey))
+            else if (is_numeric($key) && $_previousKey !== null && !is_numeric($_previousKey))
             {
-                $this->writeElement($previousKey, $value);
+                $this->writeElement($_previousKey, $value);
             }
             else
             {
@@ -404,7 +365,7 @@ class XMLWriterPlus extends \XMLWriter
         {
             foreach($value as $k=>$v)
             {
-                $this->appendHashData($k, $v, $previousKey);
+                $this->appendHashData($k, $v, $_previousKey);
             }
         }
         else if (strstr($key, ':') !== false)
@@ -420,61 +381,6 @@ class XMLWriterPlus extends \XMLWriter
             $this->appendHash($value, $key);
             $this->endElement(true);
         }
-    }
-
-    /**
-     * Convert characters for output in an XML file
-     *
-     * @param   string $string  Input string
-     * @throws \InvalidArgumentException
-     * @return  string
-     */
-    protected function convertCharacters($string)
-    {
-        $strSearch = null;
-        $strReplace = null;
-        $regexpSearch = null;
-        $regexpReplace = null;
-
-        // See if we have str_replace keys
-        if ((is_string($this->strSearchCharacters) && $this->strSearchCharacters !== "") ||
-            (is_array($this->strSearchCharacters) && count($this->strSearchCharacters) > 0))
-        {
-            $strSearch = $this->strSearchCharacters;
-        }
-
-        // If we have search keys, see if we have replace keys
-        if ($strSearch !== null &&
-            (is_string($this->strReplaceCharacters) && $this->strReplaceCharacters !== "") ||
-            (is_array($this->strReplaceCharacters) && count($this->strReplaceCharacters) > 0))
-        {
-            $strReplace = $this->strReplaceCharacters;
-        }
-
-        // See if we have preg_replace keys
-        if ((is_string($this->regexpSearchCharacters) && $this->regexpSearchCharacters !== "") ||
-            (is_array($this->regexpSearchCharacters) && count($this->regexpSearchCharacters) > 0))
-        {
-            $regexpSearch = $this->regexpSearchCharacters;
-        }
-
-        // If we have search keys, see if we have replace keys
-        if ($regexpSearch !== null &&
-            (is_string($this->regexpReplaceCharacters) && $this->regexpReplaceCharacters !== "") ||
-            (is_array($this->regexpReplaceCharacters) && count($this->regexpReplaceCharacters) > 0))
-        {
-            $regexpReplace = $this->regexpReplaceCharacters;
-        }
-
-        // Execute str_replace
-        if ($strSearch !== null && $strReplace !== null)
-            $string = str_replace($strSearch, $strReplace, $string);
-
-        // Execute preg_replace
-        if ($regexpSearch !== null && $regexpReplace !== null)
-            $string = preg_replace($regexpSearch, $regexpReplace, $string);
-
-        return $string;
     }
 
     /**
@@ -509,10 +415,11 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param bool $flush
      * @param bool $endDoc
-     * @throws \Exception
+     * @param null|int $sxeArgs
      * @return null|\SimpleXMLElement
+     * @throws \Exception
      */
-    public function getSXEFromMemory($flush = false, $endDoc = false)
+    public function getSXEFromMemory($flush = false, $endDoc = false, $sxeArgs = null)
     {
         if ($this->memory === true)
         {
@@ -520,18 +427,21 @@ class XMLWriterPlus extends \XMLWriter
                 $this->endDocument();
 
             try {
-                if (defined('LIBXML_PARSEHUGE'))
-                    $arg = LIBXML_COMPACT | LIBXML_PARSEHUGE;
-                else
-                    $arg = LIBXML_COMPACT;
+                if (null === $sxeArgs)
+                {
+                    if (defined('LIBXML_PARSEHUGE'))
+                        $sxeArgs = LIBXML_COMPACT | LIBXML_PARSEHUGE;
+                    else
+                        $sxeArgs = LIBXML_COMPACT;
+                }
 
-                return new \SimpleXMLElement($this->outputMemory((bool)$flush), $arg);
+                return new \SimpleXMLElement($this->outputMemory((bool)$flush), $sxeArgs);
             }
             catch (\Exception $e) {
                 if (libxml_get_last_error() !== false)
-                    throw new \Exception('DCarbone\XMLWriterPlus::getSXEFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
+                    throw new \Exception(get_class($this).'::getSXEFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
                 else
-                    throw new \Exception('DCarbone\XMLWriterPlus::getSXEFromMemory - Error encountered: "'.$e->getMessage().'"');
+                    throw new \Exception(get_class($this).'::getSXEFromMemory - Error encountered: "'.$e->getMessage().'"');
             }
         }
 
@@ -541,10 +451,12 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param bool $flush
      * @param bool $endDoc
+     * @param float $version
+     * @param string $encoding
      * @return \DOMDocument|null
      * @throws \Exception
      */
-    public function getDOMFromMemory($flush = false, $endDoc = false)
+    public function getDOMFromMemory($flush = false, $endDoc = false, $version = 1.0, $encoding = 'UTF-8')
     {
         if ($this->memory === true)
         {
@@ -552,16 +464,16 @@ class XMLWriterPlus extends \XMLWriter
                 $this->endDocument();
 
             try {
-                $dom = new \DOMDocument();
+                $dom = new \DOMDocument($version, $encoding);
                 $dom->loadXML($this->outputMemory((bool)$flush));
 
                 return $dom;
             }
             catch (\Exception $e) {
                 if (libxml_get_last_error() !== false)
-                    throw new \Exception('DCarbone\XMLWriterPlus::getDOMFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
+                    throw new \Exception(get_class($this).'::getDOMFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
                 else
-                    throw new \Exception('DCarbone\XMLWriterPlus::getDOMFromMemory - Error encountered: "'.$e->getMessage().'"');
+                    throw new \Exception(get_class($this).'::getDOMFromMemory - Error encountered: "'.$e->getMessage().'"');
             }
         }
 
