@@ -414,16 +414,16 @@ class XMLWriterPlus extends \XMLWriter
 
     /**
      * @param bool $flush
-     * @param bool $endDoc
+     * @param bool $endDocument
      * @param null|int $sxeArgs
      * @return null|\SimpleXMLElement
      * @throws \Exception
      */
-    public function getSXEFromMemory($flush = false, $endDoc = false, $sxeArgs = null)
+    public function getSXEFromMemory($flush = false, $endDocument = false, $sxeArgs = null)
     {
         if ($this->memory === true)
         {
-            if ($endDoc === true)
+            if ($endDocument === true)
                 $this->endDocument();
 
             try {
@@ -450,17 +450,17 @@ class XMLWriterPlus extends \XMLWriter
 
     /**
      * @param bool $flush
-     * @param bool $endDoc
+     * @param bool $endDocument
      * @param float $version
      * @param string $encoding
      * @return \DOMDocument|null
      * @throws \Exception
      */
-    public function getDOMFromMemory($flush = false, $endDoc = false, $version = 1.0, $encoding = 'UTF-8')
+    public function getDOMFromMemory($flush = false, $endDocument = false, $version = 1.0, $encoding = 'UTF-8')
     {
         if ($this->memory === true)
         {
-            if ($endDoc === true)
+            if ($endDocument === true)
                 $this->endDocument();
 
             try {
