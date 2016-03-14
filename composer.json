@@ -9,7 +9,7 @@
         "xmlwriter"
     ],
     "homepage": "https://github.com/dcarbone/xml-writer-plus",
-    "license": "GPLv3",
+    "license": "Apache-2.0",
 
     "authors" : [
         {

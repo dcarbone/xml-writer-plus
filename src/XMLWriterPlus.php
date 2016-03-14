@@ -1,24 +1,20 @@
 <?php namespace DCarbone;
 
 /*
-    Easier to use PHP XMLWriter implementation
-    Copyright (C) 2012-2015  Daniel Paul Carbone
+    Copyright 2012-2016 Daniel Carbone (daniel.p.carbone@gmail.com)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
-
-use \XMLWriter;
 
 /**
  * Class XMLWriterPlus
@@ -145,7 +141,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function startDocument($version = 1.0, $encoding = 'UTF-8', $standalone = null)
     {
-        if (is_float($version) || is_int($version))
+        if (is_float($version) || is_int($version) || is_string($version))
             $version = number_format((float)$version, 1);
 
         $this->encoding = $encoding;
@@ -232,11 +228,8 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function text($text)
     {
-        if (is_string($text) || settype($text, 'string' ) !== false)
-        {
-            $encoded = $this->encodeString($text);
-            return parent::text($encoded);
-        }
+        if (is_string($text) || settype($text, 'string') !== false)
+            return parent::text($this->encodeString($text));
 
         throw new \InvalidArgumentException(get_class($this).':text - Cannot cast passed value to string (did you forget to define a __toString on your object?)');
     }
@@ -251,9 +244,9 @@ class XMLWriterPlus extends \XMLWriter
     {
         if ($nsPrefix === null)
         {
-            return ($this->startElement($name) &&
-                $this->text($content) &&
-                $this->endElement(($content === null ? true : false)));
+            return $this->startElement($name)
+                && $this->text($content)
+                && $this->endElement(($content === null ? true : false));
         }
 
         if ($this->hasNSPrefix($nsPrefix))
@@ -294,21 +287,21 @@ class XMLWriterPlus extends \XMLWriter
     {
         if ($nsPrefix === null)
         {
-            return ($this->startElement($name) &&
-                $this->writeCdata($content) &&
-                $this->endElement(true));
+            return $this->startElement($name)
+                && $this->writeCdata($content)
+                && $this->endElement(true);
         }
 
         if ($this->hasNSPrefix($nsPrefix))
         {
-            return ($this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix)) &&
-                $this->writeCdata($content) &&
-                $this->endElement(true));
+            return $this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix))
+                && $this->writeCdata($content)
+                && $this->endElement(true);
         }
 
-        return ($this->writeElementNS($nsPrefix, $name, null) &&
-            $this->writeCdata($content) &&
-            $this->endElement(true));
+        return $this->writeElementNS($nsPrefix, $name, null)
+            && $this->writeCdata($content)
+            && $this->endElement(true);
     }
 
     /**
@@ -344,6 +337,74 @@ class XMLWriterPlus extends \XMLWriter
         }
 
         return false;
+    }
+
+    /**
+     * @param bool $flush
+     * @param bool $endDocument
+     * @param null|int $sxeArgs
+     * @return null|\SimpleXMLElement
+     * @throws \Exception
+     */
+    public function getSXEFromMemory($flush = false, $endDocument = false, $sxeArgs = null)
+    {
+        if ($this->memory === true)
+        {
+            if ($endDocument === true)
+                $this->endDocument();
+
+            try {
+                if (null === $sxeArgs)
+                {
+                    if (defined('LIBXML_PARSEHUGE'))
+                        $sxeArgs = LIBXML_COMPACT | LIBXML_PARSEHUGE;
+                    else
+                        $sxeArgs = LIBXML_COMPACT;
+                }
+
+                return new \SimpleXMLElement($this->outputMemory((bool)$flush), $sxeArgs);
+            }
+            catch (\Exception $e) {
+                if (libxml_get_last_error() !== false)
+                    throw new \Exception(get_class($this).'::getSXEFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
+                else
+                    throw new \Exception(get_class($this).'::getSXEFromMemory - Error encountered: "'.$e->getMessage().'"');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param bool $flush
+     * @param bool $endDocument
+     * @param float $version
+     * @param string $encoding
+     * @return \DOMDocument|null
+     * @throws \Exception
+     */
+    public function getDOMFromMemory($flush = false, $endDocument = false, $version = 1.0, $encoding = 'UTF-8')
+    {
+        if ($this->memory === true)
+        {
+            if ($endDocument === true)
+                $this->endDocument();
+
+            try {
+                $dom = new \DOMDocument($version, $encoding);
+                $dom->loadXML($this->outputMemory((bool)$flush));
+
+                return $dom;
+            }
+            catch (\Exception $e) {
+                if (libxml_get_last_error() !== false)
+                    throw new \Exception(get_class($this).'::getDOMFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
+                else
+                    throw new \Exception(get_class($this).'::getDOMFromMemory - Error encountered: "'.$e->getMessage().'"');
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -428,73 +489,5 @@ class XMLWriterPlus extends \XMLWriter
 
         // Convert it!
         return mb_convert_encoding($string, $this->encoding, $detect);
-    }
-
-    /**
-     * @param bool $flush
-     * @param bool $endDocument
-     * @param null|int $sxeArgs
-     * @return null|\SimpleXMLElement
-     * @throws \Exception
-     */
-    public function getSXEFromMemory($flush = false, $endDocument = false, $sxeArgs = null)
-    {
-        if ($this->memory === true)
-        {
-            if ($endDocument === true)
-                $this->endDocument();
-
-            try {
-                if (null === $sxeArgs)
-                {
-                    if (defined('LIBXML_PARSEHUGE'))
-                        $sxeArgs = LIBXML_COMPACT | LIBXML_PARSEHUGE;
-                    else
-                        $sxeArgs = LIBXML_COMPACT;
-                }
-
-                return new \SimpleXMLElement($this->outputMemory((bool)$flush), $sxeArgs);
-            }
-            catch (\Exception $e) {
-                if (libxml_get_last_error() !== false)
-                    throw new \Exception(get_class($this).'::getSXEFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
-                else
-                    throw new \Exception(get_class($this).'::getSXEFromMemory - Error encountered: "'.$e->getMessage().'"');
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param bool $flush
-     * @param bool $endDocument
-     * @param float $version
-     * @param string $encoding
-     * @return \DOMDocument|null
-     * @throws \Exception
-     */
-    public function getDOMFromMemory($flush = false, $endDocument = false, $version = 1.0, $encoding = 'UTF-8')
-    {
-        if ($this->memory === true)
-        {
-            if ($endDocument === true)
-                $this->endDocument();
-
-            try {
-                $dom = new \DOMDocument($version, $encoding);
-                $dom->loadXML($this->outputMemory((bool)$flush));
-
-                return $dom;
-            }
-            catch (\Exception $e) {
-                if (libxml_get_last_error() !== false)
-                    throw new \Exception(get_class($this).'::getDOMFromMemory - Error encountered: "'.libxml_get_last_error()->message.'"');
-                else
-                    throw new \Exception(get_class($this).'::getDOMFromMemory - Error encountered: "'.$e->getMessage().'"');
-            }
-        }
-
-        return null;
     }
 }
