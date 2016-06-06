@@ -10,7 +10,7 @@ The goal of this library is to provide some added functionality to the built-in 
 Add
 
 ```
-"dcarbone/xml-writer-plus" : "0.3.*"
+"dcarbone/xml-writer-plus" : "0.4.*"
 ```
 
 To your application's ``` composer.json ``` file.
