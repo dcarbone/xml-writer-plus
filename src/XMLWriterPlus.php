@@ -18,7 +18,7 @@
 
 /**
  * Class XMLWriterPlus
- * @package DCarbone\Helpers
+ * @package DCarbone
  */
 class XMLWriterPlus extends \XMLWriter
 {
