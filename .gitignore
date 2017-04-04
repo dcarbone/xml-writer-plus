@@ -1,6 +1,5 @@
 /.idea
-/tests
-/atlassian-ide-plugin.xml
 /*.iml
 /vendor
 /composer.lock
+/tmp

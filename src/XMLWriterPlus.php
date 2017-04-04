@@ -141,7 +141,8 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function startDocument($version = 1.0, $encoding = 'UTF-8', $standalone = null)
     {
-        if (is_float($version) || is_int($version) || is_string($version))
+        $type = gettype($version);
+        if ('double' === $type || 'integer' === $type || 'string' === $type)
             $version = number_format((float)$version, 1);
 
         $this->encoding = $encoding;
@@ -156,7 +157,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function startAttributeNS($prefix, $name, $uri = null)
     {
-        $this->nsArray[$prefix] = $uri;
+        list($prefix, $uri) = $this->resolveNamespace($prefix, $uri);
         return parent::startAttributeNS($prefix, $name, $uri);
     }
 
@@ -164,14 +165,12 @@ class XMLWriterPlus extends \XMLWriter
      * @param string $prefix
      * @param string $name
      * @param string $uri
-     * @param string $content
+     * @param string|null $content
      * @return bool
      */
-    public function writeAttributeNS($prefix, $name, $uri = null, $content)
+    public function writeAttributeNS($prefix, $name, $uri, $content = null)
     {
-        if (!$this->hasNSPrefix($prefix))
-            $this->nsArray[$prefix] = $uri;
-
+        list($prefix, $uri) = $this->resolveNamespace($prefix, $uri);
         return parent::writeAttributeNS($prefix, $name, $uri, $content);
     }
 
@@ -183,9 +182,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function startElementNS($prefix, $name, $uri = null)
     {
-        if (!$this->hasNSPrefix($prefix))
-            $this->nsArray[$prefix] = $uri;
-
+        list($prefix, $uri) = $this->resolveNamespace($prefix, $uri);
         return parent::startElementNS($prefix, $name, $uri);
     }
 
@@ -196,25 +193,10 @@ class XMLWriterPlus extends \XMLWriter
      * @param null|string $content
      * @return bool
      */
-    public function writeElementNS($prefix, $name, $uri = null, $content = null)
+    public function writeElementNS($prefix, $name, $uri, $content = null)
     {
-        if (!$this->hasNSPrefix($prefix))
-            $this->nsArray[$prefix] = $uri;
-
+        list($prefix, $uri) = $this->resolveNamespace($prefix, $uri);
         return parent::writeElementNS($prefix, $name, $uri, $content);
-    }
-
-    /**
-     * @param string $name
-     * @param string|null $nsPrefix
-     * @return bool
-     */
-    public function startElement($name, $nsPrefix = null)
-    {
-        if ($nsPrefix === null)
-            return parent::startElement($name);
-
-        return $this->startElementNS($nsPrefix, $name);
     }
 
     /**
@@ -237,28 +219,13 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param string $name
      * @param string|null $content
-     * @param string|null $nsPrefix
      * @return bool
      */
-    public function writeElement($name, $content = null, $nsPrefix = null)
+    public function writeElement($name, $content = null)
     {
-        if ($nsPrefix === null)
-        {
-            return $this->startElement($name)
-                && $this->text($content)
-                && $this->endElement(($content === null ? true : false));
-        }
-
-        if ($this->hasNSPrefix($nsPrefix))
-        {
-            return $this->writeElementNS(
-                $nsPrefix,
-                $name,
-                $this->getNSUriFromPrefix($nsPrefix),
-                $content);
-        }
-
-        return $this->writeElementNS($nsPrefix, $name, null, $content);
+        return $this->startElement($name)
+            && $this->text($content)
+            && $this->endElement(($content === null ? true : false));
     }
 
     /**
@@ -271,7 +238,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function endElement($full = false)
     {
-        if ($full === true)
+        if ($full)
             return $this->fullEndElement();
 
         return parent::endElement();
@@ -281,9 +248,10 @@ class XMLWriterPlus extends \XMLWriter
      * @param string $name
      * @param string $content
      * @param string|null $nsPrefix
+     * @param string|null $nsUri
      * @return bool
      */
-    public function writeCDataElement($name, $content, $nsPrefix = null)
+    public function writeCDataElement($name, $content, $nsPrefix = null, $nsUri = null)
     {
         if ($nsPrefix === null)
         {
@@ -292,14 +260,7 @@ class XMLWriterPlus extends \XMLWriter
                 && $this->endElement(true);
         }
 
-        if ($this->hasNSPrefix($nsPrefix))
-        {
-            return $this->startElementNS($nsPrefix, $name, $this->getNSUriFromPrefix($nsPrefix))
-                && $this->writeCdata($content)
-                && $this->endElement(true);
-        }
-
-        return $this->writeElementNS($nsPrefix, $name, null)
+        return $this->writeElementNS($nsPrefix, $name, $nsUri)
             && $this->writeCdata($content)
             && $this->endElement(true);
     }
@@ -309,14 +270,25 @@ class XMLWriterPlus extends \XMLWriter
      *
      * @param array $data
      * @param string $elementName
-     * @param null|string $nsPrefix
+     * @param string|null $nsPrefix
+     * @param string|null $nsUri
      * @return bool
      */
-    public function appendList(array $data, $elementName, $nsPrefix = null)
+    public function appendList(array $data, $elementName, $nsPrefix = null, $nsUri = null)
     {
-        foreach($data as $value)
+        if (null === $nsPrefix)
         {
-            $this->writeElement($elementName, $value, $nsPrefix);
+            foreach($data as $value)
+            {
+                $this->writeElement($elementName, $value);
+            }
+        }
+        else
+        {
+            foreach($data as $value)
+            {
+                $this->writeElementNS($nsPrefix, $elementName, $value, $nsUri);
+            }
         }
 
         return true;
@@ -425,7 +397,7 @@ class XMLWriterPlus extends \XMLWriter
                 else
                 {
                     $exp = explode(':', $key);
-                    $this->writeElement($exp[1], $value, $exp[0]);
+                    $this->writeElementNS($exp[0], $exp[1], $value);
                 }
             }
             else if (is_numeric($key) && $_previousKey !== null && !is_numeric($_previousKey))
@@ -460,6 +432,35 @@ class XMLWriterPlus extends \XMLWriter
             $this->appendHash($value, $key);
             $this->endElement(true);
         }
+    }
+
+    /**
+     * @param string $prefix
+     * @param string|null $uri
+     * @return array
+     */
+    protected function resolveNamespace($prefix, $uri)
+    {
+        if (null === $uri)
+        {
+            if (isset($this->nsArray[$prefix]))
+                return [$prefix, $this->nsArray[$prefix]];
+
+            $this->nsArray[$prefix] = null;
+
+            return [$prefix, null];
+        }
+
+        if (isset($this->nsArray[$prefix]))
+        {
+            if ($uri === $this->nsArray[$prefix])
+                return [$prefix, $uri];
+
+            // TODO: Warn about overwriting?
+            $this->nsArray[$prefix] = $uri;
+        }
+
+        return [$prefix, $uri];
     }
 
     /**

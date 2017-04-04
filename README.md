@@ -10,7 +10,7 @@ The goal of this library is to provide some added functionality to the built-in 
 Add
 
 ```
-"dcarbone/xml-writer-plus" : "0.4.*"
+"dcarbone/xml-writer-plus" : "0.5.*"
 ```
 
 To your application's ``` composer.json ``` file.
@@ -140,16 +140,16 @@ These methods interact with an internal associative array of ``` $prefix => $uri
  * @param string $uri
  * @return bool
  */
-public function startAttributeNS($prefix, $name, $uri = null)
+public function startAttributeNS($prefix, $name, $uri = null);
 
 /**
  * @param string $prefix
  * @param string $name
  * @param string $uri
- * @param string $content
+ * @param string|null $content
  * @return bool
  */
-public function writeAttributeNS($prefix, $name, $uri = null, $content)
+public function writeAttributeNS($prefix, $name, $uri, $content = null);
 
 /**
  * @param string $prefix
@@ -157,7 +157,7 @@ public function writeAttributeNS($prefix, $name, $uri = null, $content)
  * @param string $uri
  * @return bool
  */
-public function startElementNS($prefix, $name, $uri = null)
+public function startElementNS($prefix, $name, $uri = null);
 
 /**
  * @param string $prefix
@@ -166,7 +166,7 @@ public function startElementNS($prefix, $name, $uri = null)
  * @param null|string $content
  * @return bool
  */
-public function writeElementNS($prefix, $name, $uri = null, $content = null)
+public function writeElementNS($prefix, $name, $uri, $content = null);
 ```
 
 Have all been modified to update this internal array.  So if you do:
@@ -188,22 +188,11 @@ array (
 )
 ```
 
-This can then be used with the overloaded :
+
+This can then be used with:
 
 ```php
-/**
- * @param string $name
- * @param string|null $content
- * @param string|null $nsPrefix
- * @return bool
- */
-public function writeElement($name, $content = null, $nsPrefix = null)
-```
-
-As such:
-
-```php
-$xmlWriterPlus->writeElement('ElementName', 'my awesome content', 'pre');
+$xmlWriterPlus->writeElementNS('pre', 'ElementName', 'my awesome content');
 ```
 
 Which will result in:
