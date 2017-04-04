@@ -1,7 +1,7 @@
 <?php namespace DCarbone;
 
 /*
-    Copyright 2012-2016 Daniel Carbone (daniel.p.carbone@gmail.com)
+    Copyright 2012-2017 Daniel Carbone (daniel.p.carbone@gmail.com)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param string $prefix
      * @param string $name
-     * @param string $uri
+     * @param string|null $uri
      * @return bool
      */
     public function startAttributeNS($prefix, $name, $uri = null)
@@ -164,11 +164,11 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param string $prefix
      * @param string $name
-     * @param string $uri
+     * @param string|null $uri
      * @param string|null $content
      * @return bool
      */
-    public function writeAttributeNS($prefix, $name, $uri, $content = null)
+    public function writeAttributeNS($prefix, $name, $uri = null, $content = null)
     {
         list($prefix, $uri) = $this->resolveNamespace($prefix, $uri);
         return parent::writeAttributeNS($prefix, $name, $uri, $content);
@@ -177,7 +177,7 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param string $prefix
      * @param string $name
-     * @param string $uri
+     * @param string|null $uri
      * @return bool
      */
     public function startElementNS($prefix, $name, $uri = null)
@@ -189,11 +189,11 @@ class XMLWriterPlus extends \XMLWriter
     /**
      * @param string $prefix
      * @param string $name
-     * @param string $uri
-     * @param null|string $content
+     * @param string|null $uri
+     * @param string|null $content
      * @return bool
      */
-    public function writeElementNS($prefix, $name, $uri, $content = null)
+    public function writeElementNS($prefix, $name, $uri = null, $content = null)
     {
         list($prefix, $uri) = $this->resolveNamespace($prefix, $uri);
         return parent::writeElementNS($prefix, $name, $uri, $content);

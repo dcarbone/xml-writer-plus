@@ -137,7 +137,7 @@ These methods interact with an internal associative array of ``` $prefix => $uri
 /**
  * @param string $prefix
  * @param string $name
- * @param string $uri
+ * @param string|null $uri
  * @return bool
  */
 public function startAttributeNS($prefix, $name, $uri = null);
@@ -145,16 +145,16 @@ public function startAttributeNS($prefix, $name, $uri = null);
 /**
  * @param string $prefix
  * @param string $name
- * @param string $uri
+ * @param string|null $uri
  * @param string|null $content
  * @return bool
  */
-public function writeAttributeNS($prefix, $name, $uri, $content = null);
+public function writeAttributeNS($prefix, $name, $uri = null, $content = null);
 
 /**
  * @param string $prefix
  * @param string $name
- * @param string $uri
+ * @param string|null $uri
  * @return bool
  */
 public function startElementNS($prefix, $name, $uri = null);
@@ -162,11 +162,11 @@ public function startElementNS($prefix, $name, $uri = null);
 /**
  * @param string $prefix
  * @param string $name
- * @param string $uri
- * @param null|string $content
+ * @param string|null $uri
+ * @param string|null $content
  * @return bool
  */
-public function writeElementNS($prefix, $name, $uri, $content = null);
+public function writeElementNS($prefix, $name, $uri = null, $content = null);
 ```
 
 Have all been modified to update this internal array.  So if you do:
