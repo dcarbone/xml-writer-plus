@@ -1,7 +1,7 @@
 {
     "name" : "dcarbone/xml-writer-plus",
     "type" : "library",
-    "description" : "Simple XML Writer library for PHP 5.3+",
+    "description" : "Simple XML Writer library for PHP 5.4+",
 
     "keywords": [
         "php",
@@ -19,7 +19,7 @@
     ],
 
     "require" : {
-        "php" : ">=5.3.3",
+        "php" : ">=5.4.0",
         "lib-libxml" : "*"
     },
     "autoload" : {
