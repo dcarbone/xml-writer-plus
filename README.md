@@ -1,6 +1,8 @@
 xml-writer-plus
 ===============
 
+[![Build Status](https://travis-ci.org/dcarbone/xml-writer-plus.svg?branch=master)](https://travis-ci.org/dcarbone/xml-writer-plus)
+
 Simple XML Writer library for PHP 5.4+
 
 The goal of this library is to provide some added functionality to the built-in PHP <a href="http://www.php.net//manual/en/book.xmlwriter.php" target="_blank">XMLWriter</a> class.
