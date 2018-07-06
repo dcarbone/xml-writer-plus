@@ -287,7 +287,7 @@ class XMLWriterPlus extends \XMLWriter
         {
             foreach($data as $value)
             {
-                $this->writeElementNS($nsPrefix, $elementName, $value, $nsUri);
+                $this->writeElementNS($nsPrefix, $elementName, $nsUri, $value);
             }
         }
 
@@ -396,8 +396,8 @@ class XMLWriterPlus extends \XMLWriter
                 }
                 else
                 {
-                    $exp = explode(':', $key);
-                    $this->writeElementNS($exp[0], $exp[1], $value);
+                    $exp = explode(':', $key, 2);
+                    $this->writeElementNS($exp[0], $exp[1], null, $value);
                 }
             }
             else if (is_numeric($key) && $_previousKey !== null && !is_numeric($_previousKey))
@@ -419,9 +419,9 @@ class XMLWriterPlus extends \XMLWriter
                 $this->appendHashData($k, $v, $_previousKey);
             }
         }
-        else if (strstr($key, ':') !== false)
+        else if (false !== strpos($key, ':'))
         {
-            $exp = explode(':', $key);
+            $exp = explode(':', $key, 2);
             $this->startElementNS($exp[0], $exp[1]);
             $this->appendHash($value, $key);
             $this->endElement(true);
