@@ -24,6 +24,8 @@ Learn more about Composer here: <a href="https://getcomposer.org/">https://getco
 To get started creating your own XML document:
 
 ```php
+<?php
+
 use \DCarbone\XMLWriterPlus;
 
 // Initialize writer instance
@@ -46,6 +48,9 @@ $xmlWriterPlus->text('Root element node value');
 // This method opens, writes value, and closes an element all in one go
 $xmlWriterPlus->writeElement('Child', 'Root element child element');
 
+// Append a child element with some attributes in one go
+$xmlWriterPlus->writeElement('AttributedChild', 'some data', ['attr' => 'value!', 'ns:attr' => 'other value!']);
+
 // Insert a CDATA element
 $xmlWriterPlus->writeCDataElement('MyCData', '<div>This div won\'t confuse XML Parsers! <br></div>');
 
@@ -62,7 +67,8 @@ echo htmlspecialchars($xmlWriterPlus->outputMemory());
 The above will output:
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?> <!--This is a comment and it contains superfluous information--><Root>Root element node value<Child>Root element child element</Child><MyCData><![CDATA[<div>This div won't confuse XML Parsers! <br></div>]]></MyCData></Root>
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This is a comment and it contains superfluous information--><Root>Root element node value<Child>Root element child element</Child><AttributedChild attr="value!" ns:attr="other value!">some data</AttributedChild><MyCData><![CDATA[<div>This div won't confuse XML Parsers! <br></div>]]></MyCData></Root>
 ```
 
 Or, more legibly,
@@ -71,10 +77,9 @@ Or, more legibly,
 <?xml version="1.0" encoding="UTF-8"?>
 <!--This is a comment and it contains superfluous information-->
 <Root>Root element node value
-  <Child>Root element child element</Child>
-  <MyCData>
-    <![CDATA[<div>This div won't confuse XML Parsers! <br></div>]]>
-  </MyCData>
+    <Child>Root element child element</Child>
+    <AttributedChild attr="value!" ns:attr="other value!">some data</AttributedChild>
+    <MyCData><![CDATA[<div>This div won't confuse XML Parsers! <br></div>]]></MyCData>
 </Root>
 ```
 

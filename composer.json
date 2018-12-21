@@ -17,7 +17,9 @@
   ],
   "require": {
     "php": ">=5.4.0",
-    "lib-libxml": "*"
+    "ext-libxml": "*",
+    "ext-xmlwriter": "*",
+    "ext-mbstring": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "<6.0"
@@ -26,5 +28,9 @@
     "psr-4": {
       "DCarbone\\": "src/"
     }
+  },
+  "suggest": {
+    "ext-simplexml": "Enable export to \\SimpleXMLElement",
+    "ext-dom": "Enable export to \\DOMDocument"
   }
 }
