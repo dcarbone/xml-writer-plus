@@ -213,18 +213,15 @@ class XMLWriterPlus extends \XMLWriter
                 continue;
             }
             if (false !== ($pos = strpos($k, ':'))) {
-                if (!$this->writeAttributeNS(substr($k, 0, $pos), substr($k, $pos+1), null, $v)) {
+                if (!$this->writeAttributeNS(substr($k, 0, $pos), substr($k, $pos + 1), null, $v)) {
                     return false;
                 }
-            } else {
-                if (!$this->writeAttribute($k, $v)) {
-                    return false;
-                }
+            } elseif (!$this->writeAttribute($k, $v)) {
+                return false;
             }
         }
         return $this->text($content)
             && $this->endElement((null === $content ? true : false));
-
     }
 
     /**
@@ -279,13 +276,11 @@ class XMLWriterPlus extends \XMLWriter
                 continue;
             }
             if (false !== ($pos = strpos($k, ':'))) {
-                if (!$this->writeAttributeNS(substr($k, 0, $pos), substr($k, $pos+1), null, $v)) {
+                if (!$this->writeAttributeNS(substr($k, 0, $pos), substr($k, $pos + 1), null, $v)) {
                     return false;
                 }
-            } else {
-                if (!$this->writeAttribute($k, $v)) {
-                    return false;
-                }
+            } elseif (!$this->writeAttribute($k, $v)) {
+                return false;
             }
         }
         return $this->text($content)
