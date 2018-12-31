@@ -57,9 +57,7 @@ class XMLWriterPlus extends \XMLWriter
      */
     public function removeNS($prefix)
     {
-        if (isset($this->nsArray[$prefix]) || array_key_exists($prefix, $this->nsArray)) {
-            unset($this->nsArray[$prefix]);
-        }
+        unset($this->nsArray[$prefix]);
     }
 
     /**
