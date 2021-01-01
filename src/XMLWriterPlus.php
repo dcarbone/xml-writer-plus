@@ -34,16 +34,6 @@ class XMLWriterPlus extends \XMLWriter
     protected $memory = false;
 
     /**
-     * Destructor
-     *
-     * @link http://www.php.net/manual/en/function.xmlwriter-flush.php
-     */
-    public function __destruct()
-    {
-        $this->flush();
-    }
-
-    /**
      * @param string $prefix
      * @param string $uri
      */
